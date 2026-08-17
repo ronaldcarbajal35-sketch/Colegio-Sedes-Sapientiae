@@ -1,0 +1,48 @@
+---
+// Hero section component - Constructora Salcedo
+---
+
+<header
+    id="inicio"
+    class="relative bg-navy-900 text-white py-24 lg:py-36 overflow-hidden"
+>
+    <!-- Background Overlay/Image -->
+    <div
+        class="absolute inset-0 opacity-60 bg-[url('/images/hero-bg.png')] bg-cover bg-center"
+    >
+        <div class="absolute inset-0 bg-navy-900/60"></div>
+    </div>
+
+    <div
+        class="container mx-auto px-6 relative z-10 flex flex-col items-center text-center"
+    >
+        <div class="space-y-6 max-w-4xl">
+            <div
+                class="inline-block bg-brick-500 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest mb-2 shadow-md"
+            >
+                Ingeniería Sólida & Plataforma de Capacitación
+            </div>
+            <h1 class="text-4xl lg:text-6xl font-extrabold leading-tight">
+                Expertos en <span class="text-brick-500">Construcción</span> y Capacitación Especializada
+            </h1>
+            <p class="text-lg lg:text-xl text-gray-200 max-w-3xl mx-auto font-light leading-relaxed">
+                Ejecutamos obras civiles con garantía técnica en Abancay y Apurímac, e impulsamos el aprendizaje profesional con nuestra plataforma virtual de cursos de ingeniería.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-4 pt-4 justify-center">
+                <a
+                    href="#servicios"
+                    class="bg-brick-500 hover:bg-brick-600 text-white px-8 py-4 rounded-lg font-bold text-center transition-all shadow-lg hover:shadow-brick-500/30 flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-helmet-safety"></i> Cotizar Servicios de Obra
+                </a>
+                <a
+                    href="#academia"
+                    class="border-2 border-white hover:bg-white hover:text-navy-900 text-white px-8 py-4 rounded-lg font-bold text-center transition-all flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-play-circle"></i> Explorar Cursos & Aula Virtual
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
