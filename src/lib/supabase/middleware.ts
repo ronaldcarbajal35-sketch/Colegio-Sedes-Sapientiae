@@ -56,7 +56,6 @@ export async function updateSession(request: NextRequest) {
   // Obtener sesión activa o cookie de rol para demo
   const { data: { user } } = await supabase.auth.getUser()
   const demoRoleCookie = request.cookies.get('sedes_demo_role')?.value
-  const demoUserCookie = request.cookies.get('sedes_demo_user')?.value
 
   const pathname = request.nextUrl.pathname
 
@@ -84,28 +83,49 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Si ya está autenticado e intenta ir al login, redirigir a su portal
+  // Si ya está autenticado e intenta ir al login, redirigir a su portal correspondiente
   if (userRole && isAuthRoute) {
-    if (userRole === 'direccion' || userRole === 'secretaria') {
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-    } else if (userRole === 'docente') {
-      return NextResponse.redirect(new URL('/docente/secciones', request.url))
-    } else if (userRole === 'padre') {
-      return NextResponse.redirect(new URL('/padre/dashboard', request.url))
+    const roleRoutes: Record<string, string> = {
+      director: '/director/dashboard',
+      administrativo: '/admin/dashboard',
+      secretaria: '/admin/dashboard',
+      docente: '/docente/secciones',
+      auxiliar: '/auxiliar/asistencia',
+      psicologo: '/psicologia/atenciones',
+      padre: '/padre/dashboard',
+      alumno: '/alumno/dashboard',
     }
+    const target = roleRoutes[userRole] || '/padre/dashboard'
+    return NextResponse.redirect(new URL(target, request.url))
   }
 
   // Protección de rutas por Rol
-  if (pathname.startsWith('/admin') && userRole !== 'direccion' && userRole !== 'secretaria') {
+  if (pathname.startsWith('/director') && userRole !== 'director') {
+    return NextResponse.redirect(new URL('/login?error=unauthorized_director', request.url))
+  }
+
+  if (pathname.startsWith('/admin') && userRole !== 'administrativo' && userRole !== 'director' && userRole !== 'secretaria') {
     return NextResponse.redirect(new URL('/login?error=unauthorized_admin', request.url))
   }
 
-  if (pathname.startsWith('/docente') && userRole !== 'docente' && userRole !== 'direccion') {
+  if (pathname.startsWith('/docente') && userRole !== 'docente' && userRole !== 'director') {
     return NextResponse.redirect(new URL('/login?error=unauthorized_docente', request.url))
   }
 
-  if (pathname.startsWith('/padre') && userRole !== 'padre' && userRole !== 'direccion') {
+  if (pathname.startsWith('/auxiliar') && userRole !== 'auxiliar' && userRole !== 'director') {
+    return NextResponse.redirect(new URL('/login?error=unauthorized_auxiliar', request.url))
+  }
+
+  if (pathname.startsWith('/psicologia') && userRole !== 'psicologo' && userRole !== 'director') {
+    return NextResponse.redirect(new URL('/login?error=unauthorized_psicologia', request.url))
+  }
+
+  if (pathname.startsWith('/padre') && userRole !== 'padre' && userRole !== 'director') {
     return NextResponse.redirect(new URL('/login?error=unauthorized_padre', request.url))
+  }
+
+  if (pathname.startsWith('/alumno') && userRole !== 'alumno' && userRole !== 'director') {
+    return NextResponse.redirect(new URL('/login?error=unauthorized_alumno', request.url))
   }
 
   return response

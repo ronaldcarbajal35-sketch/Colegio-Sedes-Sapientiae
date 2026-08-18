@@ -1,303 +1,304 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import React, { useState, useEffect } from 'react'
+import {
+  BookOpenCheck,
+  Save,
+  History,
+  Calculator,
+  ShieldCheck,
+  Sparkles,
+  Info,
+  Check,
+  Search
+} from 'lucide-react'
+import { dataStore, SeccionCurso, Alumno, Nota, AuditoriaNota } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
-import { Select } from '@/components/ui/input'
-import { BookOpenCheck, CheckCircle2, Clock, Save, Sparkles, Wifi, WifiOff, Users, ArrowRight } from 'lucide-react'
-import { dataStore, type Seccion, type Alumno, type Nota } from '@/lib/mock-data'
-import { syncManager } from '@/lib/sync-queue'
+import { Modal } from '@/components/ui/modal'
 
-function DocenteNotasContent() {
-  const searchParams = useSearchParams()
-  const initialSeccion = searchParams.get('seccion') || 'sec-3a-pri'
-
-  const [secciones, setSecciones] = useState<Seccion[]>([])
-  const [selectedSeccion, setSelectedSeccion] = useState<string>(initialSeccion)
-  const [selectedPeriodo, setSelectedPeriodo] = useState<string>('Bimestre 1')
-  const [selectedCompetencia, setSelectedCompetencia] = useState<string>('Resuelve problemas de cantidad')
+export default function DocenteNotasPage() {
+  const [seccionesCursos, setSeccionesCursos] = useState<SeccionCurso[]>([])
+  const [selectedScId, setSelectedScId] = useState('')
   const [alumnos, setAlumnos] = useState<Alumno[]>([])
-  const [notas, setNotas] = useState<Record<string, { calificacion: 'AD'|'A'|'B'|'C'; conclusiones?: string; sync_status: 'synced'|'pending' }>>({})
-  const [saveStatus, setSaveStatus] = useState<string | null>(null)
+  const [notas, setNotas] = useState<Nota[]>([])
+  const [auditorias, setAuditorias] = useState<AuditoriaNota[]>([])
+  const [selectedBimestre, setSelectedBimestre] = useState<'I' | 'II' | 'III' | 'IV'>('I')
 
-  const competencias = [
-    'Resuelve problemas de cantidad',
-    'Resuelve problemas de forma, movimiento y localización',
-    'Resuelve problemas de regularidad, equivalencia y cambio',
-    'Resuelve problemas de gestión de datos e incertidumbre',
-  ]
+  // Estado editable de notas: { alumnoId: { nota_dia, nota_bimestral, conclusiones } }
+  const [editMap, setEditMap] = useState<Record<string, { nota_dia: number; nota_bimestral: number; conclusiones: string }>>({})
+  const [savedSuccess, setSavedSuccess] = useState(false)
 
-  const loadData = () => {
-    const secList = dataStore.getSecciones()
-    setSecciones(secList)
-
-    const allAlu = dataStore.getAlumnos().filter(a => a.seccion_id === selectedSeccion)
-    setAlumnos(allAlu)
-
-    const allNotas = dataStore.getNotas().filter(n => n.periodo === selectedPeriodo && n.competencia === selectedCompetencia)
-    const map: Record<string, { calificacion: 'AD'|'A'|'B'|'C'; conclusiones?: string; sync_status: 'synced'|'pending' }> = {}
-
-    allAlu.forEach((alu) => {
-      const match = allNotas.find(n => n.alumno_id === alu.id)
-      if (match) {
-        map[alu.id] = {
-          calificacion: match.calificacion,
-          conclusiones: match.conclusiones_descriptivas,
-          sync_status: match.sync_status === 'pending' ? 'pending' : 'synced',
-        }
-      }
-    })
-    setNotas(map)
-  }
+  // Modal de Historial / Auditoría (RF-016)
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false)
 
   useEffect(() => {
-    loadData()
-  }, [selectedSeccion, selectedPeriodo, selectedCompetencia])
+    const scList = dataStore.getSeccionesCursos()
+    setSeccionesCursos(scList)
+    if (scList.length > 0) setSelectedScId(scList[0].id)
 
-  const handleSetCalificacion = async (alumnoId: string, grade: 'AD' | 'A' | 'B' | 'C') => {
-    const current = notas[alumnoId] || {}
-    const updated = {
-      ...current,
-      calificacion: grade,
-      sync_status: (typeof navigator !== 'undefined' && navigator.onLine ? 'synced' : 'pending') as 'synced' | 'pending',
-    }
+    const allAlu = dataStore.getAlumnos()
+    setAlumnos(allAlu)
+    setNotas(dataStore.getNotas())
+    setAuditorias(dataStore.getAuditoriaNotas())
+  }, [])
 
-    setNotas(prev => ({
+  useEffect(() => {
+    const currentNotas = dataStore.getNotas().filter(n => n.seccion_curso_id === selectedScId && n.bimestre === selectedBimestre)
+    const map: Record<string, { nota_dia: number; nota_bimestral: number; conclusiones: string }> = {}
+
+    alumnos.forEach(alu => {
+      const found = currentNotas.find(n => n.alumno_id === alu.id)
+      map[alu.id] = {
+        nota_dia: found ? found.nota_dia : 16,
+        nota_bimestral: found ? found.nota_bimestral : 16,
+        conclusiones: found?.conclusiones_descriptivas || '',
+      }
+    })
+
+    setEditMap(map)
+  }, [selectedScId, selectedBimestre, alumnos])
+
+  const currentSc = seccionesCursos.find(sc => sc.id === selectedScId) || seccionesCursos[0]
+  const seccionAlumnos = alumnos.filter(a => a.seccion_id === currentSc?.seccion_id)
+
+  const handleNotaDiaChange = (aluId: string, val: number) => {
+    const clamped = Math.max(0, Math.min(20, val || 0))
+    setEditMap(prev => ({
       ...prev,
-      [alumnoId]: updated,
+      [aluId]: {
+        ...prev[aluId],
+        nota_dia: clamped,
+        // RF-014: Consolidación automática de nota bimestral
+        nota_bimestral: clamped,
+      }
     }))
-
-    // Guardar en store y pasar por motor offline-first
-    dataStore.saveNota({
-      alumno_id: alumnoId,
-      seccion_curso_id: 'sc-3a-mat',
-      competencia: selectedCompetencia,
-      calificacion: grade,
-      periodo: selectedPeriodo,
-      conclusiones_descriptivas: current.conclusiones,
-    })
-
-    await syncManager.guardarNota({
-      alumno_id: alumnoId,
-      seccion_curso_id: 'sc-3a-mat',
-      competencia: selectedCompetencia,
-      calificacion: grade,
-      periodo: selectedPeriodo,
-      conclusiones_descriptivas: current.conclusiones,
-    })
-
-    setSaveStatus(`Calificación de estudiante guardada (${grade})`)
-    setTimeout(() => setSaveStatus(null), 2500)
   }
 
-  const handleSetConclusion = (alumnoId: string, text: string) => {
-    const current = notas[alumnoId]
-    if (!current) return
-
-    setNotas(prev => ({
+  const handleNotaBimestralChange = (aluId: string, val: number) => {
+    const clamped = Math.max(0, Math.min(20, val || 0))
+    setEditMap(prev => ({
       ...prev,
-      [alumnoId]: { ...current, conclusiones: text },
+      [aluId]: {
+        ...prev[aluId],
+        nota_bimestral: clamped,
+      }
     }))
-
-    dataStore.saveNota({
-      alumno_id: alumnoId,
-      seccion_curso_id: 'sc-3a-mat',
-      competencia: selectedCompetencia,
-      calificacion: current.calificacion,
-      periodo: selectedPeriodo,
-      conclusiones_descriptivas: text,
-    })
   }
 
-  const handleFillAll = (grade: 'AD' | 'A' | 'B' | 'C') => {
-    alumnos.forEach((alu) => {
-      handleSetCalificacion(alu.id, grade)
+  const handleConclusionesChange = (aluId: string, text: string) => {
+    setEditMap(prev => ({
+      ...prev,
+      [aluId]: {
+        ...prev[aluId],
+        conclusiones: text,
+      }
+    }))
+  }
+
+  const handleGuardarNotas = () => {
+    seccionAlumnos.forEach(alu => {
+      const data = editMap[alu.id]
+      if (data) {
+        dataStore.saveNota({
+          alumno_id: alu.id,
+          seccion_curso_id: currentSc.id,
+          bimestre: selectedBimestre,
+          competencia: 'Resuelve problemas y razonamiento del área',
+          nota_dia: data.nota_dia,
+          nota_bimestral: data.nota_bimestral,
+          conclusiones_descriptivas: data.conclusiones,
+          usuario_nombre: 'Prof. Carlos García Silva',
+          motivo_cambio: 'Actualización en registro de calificaciones',
+        })
+      }
     })
+
+    setNotas(dataStore.getNotas())
+    setAuditorias(dataStore.getAuditoriaNotas())
+    setSavedSuccess(true)
+    setTimeout(() => setSavedSuccess(false), 2500)
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-soft">
         <div>
-          <h2 className="text-2xl font-black text-primary tracking-tight flex items-center gap-2">
-            <BookOpenCheck className="w-6 h-6 text-secondary" />
-            <span>Registro de Calificaciones (MINEDU)</span>
-          </h2>
-          <p className="text-xs sm:text-sm text-on-surface-variant">
-            Evaluación formativa y cualitativa con soporte Offline-First (Dexie.js + Supabase)
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+              RF-013 / RF-014 / RF-016
+            </span>
+            <span className="text-xs text-on-surface-variant font-medium">Evaluación Formativa & Consolidado</span>
+          </div>
+          <h1 className="text-xl font-bold text-primary mt-1">
+            Registro de Calificaciones (Diarias y Bimestrales)
+          </h1>
+          <p className="text-xs text-on-surface-variant">
+            Califique las sesiones diarias con consolidación bimestral automática y auditoría de cambios.
           </p>
         </div>
 
-        {saveStatus && (
-          <div className="px-3.5 py-1.5 rounded-xl bg-success-container text-success border border-success/30 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{saveStatus}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Control Filters Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-card grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Select
-          label="Sección y Grado"
-          value={selectedSeccion}
-          onChange={(e) => setSelectedSeccion(e.target.value)}
-        >
-          {secciones.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.nombre} ({s.nivel})
-            </option>
-          ))}
-        </Select>
-
-        <Select
-          label="Periodo Académico"
-          value={selectedPeriodo}
-          onChange={(e) => setSelectedPeriodo(e.target.value)}
-        >
-          <option value="Bimestre 1">Bimestre 1</option>
-          <option value="Bimestre 2">Bimestre 2</option>
-          <option value="Bimestre 3">Bimestre 3</option>
-          <option value="Bimestre 4">Bimestre 4</option>
-        </Select>
-
-        <Select
-          label="Competencia Curricular"
-          value={selectedCompetencia}
-          onChange={(e) => setSelectedCompetencia(e.target.value)}
-        >
-          {competencias.map((comp) => (
-            <option key={comp} value={comp}>
-              {comp}
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      {/* Quick Fill Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-container/60 p-3.5 rounded-xl border border-outline-variant/30 text-xs">
-        <div className="flex items-center gap-2 font-bold text-primary">
-          <Sparkles className="w-4 h-4 text-secondary" />
-          <span>Llenado Rápido para todos los alumnos:</span>
-        </div>
         <div className="flex items-center gap-2">
-          {(['AD', 'A', 'B', 'C'] as const).map((grade) => (
+          <Button
+            variant="outline"
+            onClick={() => setIsAuditModalOpen(true)}
+            leftIcon={<History className="w-4 h-4" />}
+          >
+            Historial de Auditoría
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={handleGuardarNotas}
+            leftIcon={<Save className="w-4 h-4" />}
+          >
+            Guardar Calificaciones
+          </Button>
+        </div>
+      </div>
+
+      {savedSuccess && (
+        <div className="p-4 rounded-xl bg-success-container text-success text-xs font-bold flex items-center gap-2 animate-in fade-in">
+          <Check className="w-4 h-4" />
+          <span>Calificaciones guardadas exitosamente y registradas en el log de auditoría.</span>
+        </div>
+      )}
+
+      {/* Selector de Curso y Bimestre */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-outline-variant/30 shadow-soft">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold text-primary">Curso:</span>
+          {seccionesCursos.map((sc) => (
             <button
-              key={grade}
-              onClick={() => handleFillAll(grade)}
-              className="px-2.5 py-1 rounded-lg font-bold bg-white hover:bg-primary hover:text-white border border-outline-variant/30 text-primary shadow-xs transition-colors"
+              key={sc.id}
+              onClick={() => setSelectedScId(sc.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                selectedScId === sc.id
+                  ? 'bg-primary text-white shadow'
+                  : 'bg-surface-container/60 hover:bg-surface-container text-on-surface'
+              }`}
             >
-              Asignar {grade}
+              {sc.curso_nombre} ({sc.seccion_nombre})
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-1.5 border-t sm:border-t-0 pt-2 sm:pt-0">
+          {(['I', 'II', 'III', 'IV'] as const).map((bim) => (
+            <button
+              key={bim}
+              onClick={() => setSelectedBimestre(bim)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                selectedBimestre === bim
+                  ? 'bg-secondary text-white shadow'
+                  : 'bg-surface-container text-on-surface hover:bg-surface-container/80'
+              }`}
+            >
+              Bimestre {bim}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Student Evaluation Matrix Table */}
-      <Card>
-        <CardHeader className="bg-surface flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Lista de Estudiantes — {alumnos.length} Alumnos</CardTitle>
-            <p className="text-xs text-on-surface-variant">{selectedCompetencia}</p>
+      {/* Matriz de Calificaciones */}
+      <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-soft overflow-hidden">
+        <div className="p-4 border-b border-surface-container grid grid-cols-12 gap-2 text-xs font-bold text-primary items-center">
+          <span className="col-span-4">Estudiante / Código</span>
+          <span className="col-span-2 text-center">Nota del Día (RF-013)</span>
+          <span className="col-span-2 text-center">Nota Bimestral (RF-014)</span>
+          <span className="col-span-4">Conclusión Descriptiva / Observación</span>
+        </div>
+
+        <div className="divide-y divide-surface-container">
+          {seccionAlumnos.map((alu) => {
+            const current = editMap[alu.id] || { nota_dia: 16, nota_bimestral: 16, conclusiones: '' }
+
+            return (
+              <div key={alu.id} className="p-4 grid grid-cols-12 gap-2 items-center hover:bg-surface-container/30 transition-colors">
+                <div className="col-span-4 space-y-0.5">
+                  <span className="text-xs font-black text-primary block">
+                    {alu.nombres} {alu.apellidos}
+                  </span>
+                  <span className="text-[10px] text-on-surface-variant font-mono">
+                    {alu.codigo_estudiante} • DNI: {alu.dni}
+                  </span>
+                </div>
+
+                <div className="col-span-2 flex justify-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={current.nota_dia}
+                    onChange={(e) => handleNotaDiaChange(alu.id, parseInt(e.target.value))}
+                    className="w-16 text-center py-1.5 font-black text-sm rounded-xl border border-outline-variant/60 focus:ring-2 focus:ring-primary text-primary"
+                  />
+                </div>
+
+                <div className="col-span-2 flex justify-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={current.nota_bimestral}
+                    onChange={(e) => handleNotaBimestralChange(alu.id, parseInt(e.target.value))}
+                    className="w-16 text-center py-1.5 font-black text-sm rounded-xl border-2 border-secondary bg-amber-50/50 text-secondary focus:ring-2 focus:ring-secondary"
+                  />
+                </div>
+
+                <div className="col-span-4">
+                  <input
+                    type="text"
+                    placeholder="Excelente desempeño / Reforzar cálculo..."
+                    value={current.conclusiones}
+                    onChange={(e) => handleConclusionesChange(alu.id, e.target.value)}
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-outline-variant/60 text-on-surface focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Modal de Historial de Auditoría (RF-016) */}
+      <Modal
+        isOpen={isAuditModalOpen}
+        onClose={() => setIsAuditModalOpen(false)}
+        title="Historial de Auditoría de Calificaciones (RF-016)"
+      >
+        <div className="space-y-3">
+          <p className="text-xs text-on-surface-variant">
+            Registro inmutable de correcciones y ediciones de notas con usuario, fecha y valor anterior/nuevo.
+          </p>
+
+          <div className="divide-y divide-surface-container max-h-72 overflow-y-auto">
+            {auditorias.map((aud) => (
+              <div key={aud.id} className="py-3 space-y-1 text-xs">
+                <div className="flex items-center justify-between font-bold text-primary">
+                  <span>{aud.alumno_nombre} — {aud.curso_nombre}</span>
+                  <span className="text-on-surface-variant text-[11px] font-normal">{aud.fecha}</span>
+                </div>
+                <p className="text-on-surface-variant">
+                  Modificado por: <span className="font-semibold text-primary">{aud.usuario_modifica}</span>
+                </p>
+                <div className="flex items-center gap-3 text-xs pt-1">
+                  <span className="text-error font-medium">Anterior: {aud.valor_anterior}</span>
+                  <span>➔</span>
+                  <span className="text-emerald-700 font-bold">Nuevo: {aud.valor_nuevo}</span>
+                </div>
+                <p className="text-[11px] text-secondary font-medium pt-0.5">Motivo: {aud.motivo}</p>
+              </div>
+            ))}
           </div>
-          <span className="text-xs font-bold text-primary">{selectedPeriodo}</span>
-        </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs sm:text-sm">
-            <thead>
-              <tr className="bg-surface-container/60 border-b border-surface-container text-on-surface-variant font-semibold text-[11px] uppercase tracking-wider">
-                <th className="p-4 w-12 text-center">N°</th>
-                <th className="p-4">Apellidos y Nombres</th>
-                <th className="p-4">DNI</th>
-                <th className="p-4 text-center">Calificación (MINEDU)</th>
-                <th className="p-4">Conclusión Descriptiva / Observación</th>
-                <th className="p-4 text-center">Sync</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-container">
-              {alumnos.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="p-8 text-center text-on-surface-variant">
-                    No hay estudiantes registrados en esta sección.
-                  </td>
-                </tr>
-              ) : (
-                alumnos.map((alumno, index) => {
-                  const currentNota = notas[alumno.id]
-                  const cal = currentNota?.calificacion
 
-                  return (
-                    <tr key={alumno.id} className="hover:bg-surface-container/20 transition-colors">
-                      <td className="p-4 text-center font-bold text-on-surface-variant">{index + 1}</td>
-                      <td className="p-4 font-bold text-primary">
-                        {alumno.apellidos}, {alumno.nombres}
-                      </td>
-                      <td className="p-4 text-on-surface-variant font-mono text-xs">{alumno.dni}</td>
-                      <td className="p-4 text-center">
-                        <div className="inline-flex items-center gap-1 p-1 bg-surface-container/80 rounded-xl border border-outline-variant/40">
-                          {(['AD', 'A', 'B', 'C'] as const).map((grade) => {
-                            const isSelected = cal === grade
-                            return (
-                              <button
-                                key={grade}
-                                onClick={() => handleSetCalificacion(alumno.id, grade)}
-                                className={`w-8 h-8 rounded-lg font-bold text-xs transition-all ${
-                                  isSelected
-                                    ? grade === 'AD'
-                                      ? 'bg-emerald-600 text-white shadow'
-                                      : grade === 'A'
-                                      ? 'bg-blue-600 text-white shadow'
-                                      : grade === 'B'
-                                      ? 'bg-amber-600 text-white shadow'
-                                      : 'bg-rose-600 text-white shadow'
-                                    : 'text-on-surface-variant hover:bg-white'
-                                }`}
-                              >
-                                {grade}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <input
-                          type="text"
-                          placeholder="Ingrese retroalimentación descriptiva..."
-                          defaultValue={currentNota?.conclusiones || ''}
-                          onBlur={(e) => handleSetConclusion(alumno.id, e.target.value)}
-                          className="w-full bg-white border border-outline-variant/40 rounded-lg px-2.5 py-1.5 text-xs text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:ring-1 focus:ring-primary"
-                        />
-                      </td>
-                      <td className="p-4 text-center">
-                        {currentNota?.sync_status === 'pending' ? (
-                          <span title="Guardado offline localmente">
-                            <WifiOff className="w-4 h-4 text-amber-500 mx-auto" />
-                          </span>
-                        ) : (
-                          <span title="Sincronizado con Supabase">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" />
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+          <div className="pt-2 flex justify-end">
+            <Button variant="outline" onClick={() => setIsAuditModalOpen(false)}>
+              Cerrar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
-  )
-}
-
-export default function DocenteNotasPage() {
-  return (
-    <Suspense fallback={<div className="p-8 text-center text-on-surface-variant">Cargando registro de notas...</div>}>
-      <DocenteNotasContent />
-    </Suspense>
   )
 }

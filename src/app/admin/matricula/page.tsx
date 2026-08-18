@@ -276,7 +276,7 @@ export default function AdminMatriculaPage() {
                 Documentos Adjuntos (Supabase Storage):
               </h4>
               <div className="space-y-1.5">
-                {selectedMatricula.documentos.map((doc, idx) => (
+                {selectedMatricula.documentos.map((doc: string, idx: number) => (
                   <div key={idx} className="flex items-center justify-between p-2.5 bg-white border border-outline-variant/30 rounded-lg text-xs">
                     <span className="font-medium text-primary flex items-center gap-2">
                       <FileText className="w-4 h-4 text-secondary" />

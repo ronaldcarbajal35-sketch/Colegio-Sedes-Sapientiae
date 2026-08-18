@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/modal'
 import { Input, Select } from '@/components/ui/input'
 import { Users2, Search, UserPlus, ShieldCheck, Mail, Phone, Lock, CheckCircle2 } from 'lucide-react'
 import { DEMO_PROFILES, type DemoUser } from '@/components/shared/role-switcher-banner'
+import { UserRole } from '@/lib/mock-data'
 
 export default function AdminUsuariosPage() {
   const [users, setUsers] = useState<DemoUser[]>(DEMO_PROFILES)
@@ -19,7 +20,7 @@ export default function AdminUsuariosPage() {
   // Form State
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
-  const [rol, setRol] = useState<'direccion' | 'secretaria' | 'docente' | 'padre'>('docente')
+  const [rol, setRol] = useState<UserRole>('docente')
   const [cargo, setCargo] = useState('')
   const [telefono, setTelefono] = useState('')
 
@@ -33,7 +34,8 @@ export default function AdminUsuariosPage() {
       rol,
       cargo: cargo || (rol === 'docente' ? 'Docente de Aula' : rol === 'padre' ? 'Apoderado' : 'Personal Administrativo'),
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&h=120&fit=crop&q=80',
-      defaultRoute: rol === 'direccion' || rol === 'secretaria' ? '/admin/dashboard' : rol === 'docente' ? '/docente/secciones' : '/padre/dashboard',
+      defaultRoute: rol === 'director' ? '/director/dashboard' : rol === 'administrativo' ? '/admin/dashboard' : rol === 'docente' ? '/docente/secciones' : rol === 'auxiliar' ? '/auxiliar/asistencia' : rol === 'psicologo' ? '/psicologia/atenciones' : rol === 'padre' ? '/padre/dashboard' : '/alumno/dashboard',
+      badgeColor: 'bg-primary/10 text-primary border-primary/20',
     }
 
     setUsers(prev => [newUser, ...prev])
@@ -60,10 +62,10 @@ export default function AdminUsuariosPage() {
         <div>
           <h2 className="text-2xl font-black text-primary tracking-tight flex items-center gap-2">
             <Users2 className="w-6 h-6 text-secondary" />
-            <span>Gestión de Cuentas y Usuarios</span>
+            <span>Gestión de Cuentas y 7 Roles Institucionales</span>
           </h2>
           <p className="text-xs sm:text-sm text-on-surface-variant">
-            Administración de credenciales vinculadas a <code>auth.users</code> y <code>perfiles</code>
+            Administración de credenciales de los 7 roles vinculadas a <code>auth.users</code> y <code>perfiles</code> (RF-001, RF-002)
           </p>
         </div>
 
@@ -98,7 +100,7 @@ export default function AdminUsuariosPage() {
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1">
-          {['todos', 'direccion', 'secretaria', 'docente', 'padre'].map((r) => (
+          {['todos', 'director', 'administrativo', 'docente', 'auxiliar', 'psicologo', 'padre', 'alumno'].map((r) => (
             <button
               key={r}
               onClick={() => setSelectedRoleFilter(r)}
@@ -144,20 +146,9 @@ export default function AdminUsuariosPage() {
                   </td>
                   <td className="p-4 font-mono text-on-surface-variant text-xs">{user.email}</td>
                   <td className="p-4">
-                    <Badge
-                      variant={
-                        user.rol === 'direccion'
-                          ? 'primary'
-                          : user.rol === 'docente'
-                          ? 'success'
-                          : user.rol === 'secretaria'
-                          ? 'info'
-                          : 'warning'
-                      }
-                      size="md"
-                    >
-                      {user.rol.toUpperCase()}
-                    </Badge>
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${user.badgeColor}`}>
+                      {user.rol}
+                    </span>
                   </td>
                   <td className="p-4 text-on-surface-variant text-xs">{user.cargo}</td>
                   <td className="p-4 text-center">
@@ -174,13 +165,13 @@ export default function AdminUsuariosPage() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Crear Nuevo Usuario Institucional"
-        description="Genera la cuenta en Supabase Auth y activa el trigger Postgres"
+        title="Crear Nuevo Usuario Institucional (RF-001)"
+        description="Genera la cuenta en el sistema para cualquiera de los 7 roles"
       >
         <form onSubmit={handleCreateUser} className="space-y-4">
           <Input
             label="Nombre Completo"
-            placeholder="Ej. Prof. Manuel Benítez"
+            placeholder="Ej. Lic. Manuel Benítez"
             required
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
@@ -199,12 +190,15 @@ export default function AdminUsuariosPage() {
             <Select
               label="Rol del Usuario"
               value={rol}
-              onChange={(e) => setRol(e.target.value as any)}
+              onChange={(e) => setRol(e.target.value as UserRole)}
             >
+              <option value="director">Director</option>
+              <option value="administrativo">Administrativo / Secretaría</option>
               <option value="docente">Docente</option>
+              <option value="auxiliar">Auxiliar</option>
+              <option value="psicologo">Psicólogo</option>
               <option value="padre">Padre de Familia</option>
-              <option value="secretaria">Secretaría</option>
-              <option value="direccion">Dirección</option>
+              <option value="alumno">Alumno</option>
             </Select>
 
             <Input
@@ -217,7 +211,7 @@ export default function AdminUsuariosPage() {
 
           <Input
             label="Cargo o Especialidad"
-            placeholder="Ej. Docente de Ciencias / Apoderado"
+            placeholder="Ej. Docente de Ciencias / Apoderado / Auxiliar de Primaria"
             value={cargo}
             onChange={(e) => setCargo(e.target.value)}
           />

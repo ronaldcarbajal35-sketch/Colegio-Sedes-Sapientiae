@@ -12,20 +12,19 @@ export default function DocenteLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col">
+    <div className="min-h-screen bg-surface flex">
       <Sidebar
         role="docente"
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="lg:pl-64 flex flex-col flex-1">
+      <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
         <Navbar
           onOpenSidebar={() => setSidebarOpen(true)}
-          isPadre={false}
         />
 
-        <main className="p-4 sm:p-6 lg:p-8 flex-1 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-300">
           {children}
         </main>
       </div>

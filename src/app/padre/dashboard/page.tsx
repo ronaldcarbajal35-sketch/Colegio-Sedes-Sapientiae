@@ -2,284 +2,289 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { StatsCard } from '@/components/ui/stats-card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   GraduationCap,
   CalendarCheck2,
   CreditCard,
-  Bell,
+  ClipboardList,
+  CheckSquare,
+  AlertTriangle,
+  QrCode,
   ArrowRight,
-  User,
-  BookOpen,
-  AlertCircle,
-  FileText,
-  ShieldCheck,
+  Sparkles,
+  BookOpenCheck,
+  CheckCircle2,
+  Clock,
+  School,
+  FileText
 } from 'lucide-react'
-import { dataStore, type Alumno, type Nota, type Pago, type Comunicado } from '@/lib/mock-data'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { dataStore, Alumno, Pago, TareaAviso, ConductaIncidencia, TemarioDia } from '@/lib/mock-data'
 
 export default function PadreDashboard() {
-  const [activeChildId, setActiveChildId] = useState<string>('alu-1')
   const [alumnos, setAlumnos] = useState<Alumno[]>([])
-  const [currentChild, setCurrentChild] = useState<Alumno | null>(null)
-  const [notas, setNotas] = useState<Nota[]>([])
+  const [selectedAlumno, setSelectedAlumno] = useState<Alumno | null>(null)
   const [pagos, setPagos] = useState<Pago[]>([])
-  const [comunicados, setComunicados] = useState<Comunicado[]>([])
-
-  const loadData = () => {
-    const allAlu = dataStore.getAlumnos()
-    const misHijos = allAlu.filter(a => a.apoderado_id === 'usr-pad-1')
-    setAlumnos(misHijos)
-
-    const storedChildId = typeof window !== 'undefined' ? localStorage.getItem('sedes_selected_child') : null
-    const childId = storedChildId && misHijos.find(h => h.id === storedChildId) ? storedChildId : misHijos[0]?.id || 'alu-1'
-    setActiveChildId(childId)
-
-    const selected = misHijos.find(h => h.id === childId) || misHijos[0] || null
-    setCurrentChild(selected)
-
-    const allNotas = dataStore.getNotas().filter(n => n.alumno_id === childId)
-    setNotas(allNotas)
-
-    const allPagos = dataStore.getPagos().filter(p => p.alumno_id === childId)
-    setPagos(allPagos)
-
-    const allCom = dataStore.getComunicados()
-    setComunicados(allCom.slice(0, 3))
-  }
+  const [tareas, setTareas] = useState<TareaAviso[]>([])
+  const [conductas, setConductas] = useState<ConductaIncidencia[]>([])
+  const [temarios, setTemarios] = useState<TemarioDia[]>([])
 
   useEffect(() => {
-    loadData()
-    const handleChildChange = () => loadData()
-    window.addEventListener('child_changed', handleChildChange)
-    return () => window.removeEventListener('child_changed', handleChildChange)
+    const allAlumnos = dataStore.getAlumnos()
+    const misHijos = allAlumnos.filter((a) => a.apoderado_id === 'usr-pad-1' || a.id === 'alu-1' || a.id === 'alu-2')
+    setAlumnos(misHijos)
+    if (misHijos.length > 0) {
+      setSelectedAlumno(misHijos[0])
+    }
+
+    setPagos(dataStore.getPagos())
+    setTareas(dataStore.getTareas())
+    setConductas(dataStore.getConductas())
+    setTemarios(dataStore.getTemarios())
   }, [])
 
-  const proximoPago = pagos.find(p => p.estado === 'pendiente' || p.estado === 'vencido')
+  const childId = selectedAlumno?.id || 'alu-1'
+  const childPagos = pagos.filter((p) => p.alumno_id === childId)
+  const tieneMora = childPagos.some((p) => p.estado === 'vencido' || p.mora > 0)
+  const deudasVencidas = childPagos.filter((p) => p.estado === 'vencido' || p.mora > 0)
+  const childConductas = conductas.filter((c) => c.alumno_id === childId)
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-primary to-primary-container rounded-2xl p-6 sm:p-8 text-white shadow-soft flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-secondary-container backdrop-blur-md">
-            <span>Año Escolar 2026</span>
+      {/* Header con Bienvenida y Selector de Hijo */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-soft">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-secondary/15 text-secondary">
+              Apoderado Oficial
+            </span>
+            <span className="text-xs text-on-surface-variant font-medium">Ciclo Académico 2026</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Bienvenido, Ing. Roberto Quispe
-          </h2>
-          <p className="text-sm text-surface-container/80 max-w-xl">
-            Seguimiento académico y administrativo de su hijo(a):{' '}
-            <strong className="text-secondary-container">{currentChild?.nombres} {currentChild?.apellidos}</strong>{' '}
-            ({currentChild?.seccion_nombre})
+          <h1 className="text-2xl font-black text-primary tracking-tight">
+            Bienvenido, Ing. Roberto Quispe Mamani
+          </h1>
+          <p className="text-xs text-on-surface-variant">
+            Seguimiento académico, asistencia en tiempo real y pagos institucionales de sus menores hijos.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link href="/padre/pagos">
-            <Button variant="secondary" size="md" leftIcon={<CreditCard className="w-4 h-4" />}>
-              Pagar Pensión
-            </Button>
-          </Link>
-          <Link href="/padre/notas">
-            <Button variant="outline" size="md" className="bg-white/10 text-white border-white/20 hover:bg-white/20">
-              Ver Notas
-            </Button>
-          </Link>
+        {/* Selector de Hijo */}
+        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-surface-container border border-outline-variant/40">
+          {alumnos.map((hijo) => (
+            <button
+              key={hijo.id}
+              onClick={() => setSelectedAlumno(hijo)}
+              className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                selectedAlumno?.id === hijo.id
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-on-surface-variant hover:text-primary hover:bg-white/60'
+              }`}
+            >
+              <School className="w-3.5 h-3.5" />
+              <span>{hijo.nombres.split(' ')[0]}</span>
+              <span className="text-[10px] opacity-80">({hijo.seccion_nombre.split(' ')[0]})</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <StatsCard
-          title="Rendimiento Global"
-          value="AD (Destacado)"
-          subtitle="Basado en 3 competencias evaluadas"
-          variant="success"
-          icon={<GraduationCap className="w-6 h-6" />}
-        />
+      {/* ALERTA DE MORA Y BLOQUEO DE NOTAS (RF-033, RF-034) */}
+      {tieneMora ? (
+        <div className="p-5 rounded-2xl bg-amber-50 border-2 border-amber-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-amber-950">
+                Aviso de Deuda Pendiente — Acceso a Notas Restringido (RF-034)
+              </h3>
+              <p className="text-xs text-amber-900/90 mt-0.5 leading-relaxed">
+                El estudiante <span className="font-bold">{selectedAlumno?.nombres}</span> registra{' '}
+                <span className="font-bold">{deudasVencidas.length} pensión(es) vencida(s)</span>. Regularice su pago mediante Yape QR para habilitar la visualización de notas.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/padre/pagos"
+            className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center justify-center gap-2 shrink-0 shadow-md transition-all"
+          >
+            <QrCode className="w-4 h-4" />
+            <span>Pagar con Yape QR</span>
+          </Link>
+        </div>
+      ) : (
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <p className="text-xs text-emerald-950 font-medium">
+              <span className="font-bold">Estado de Cuenta al Día:</span> No registra deudas pendientes para {selectedAlumno?.nombres}.
+            </p>
+          </div>
+          <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-lg">
+            Notas Habilitadas
+          </span>
+        </div>
+      )}
 
-        <StatsCard
-          title="Asistencia del Mes"
-          value="98.5%"
-          subtitle="20 días asistidos, 0 faltas"
-          variant="primary"
-          icon={<CalendarCheck2 className="w-6 h-6" />}
-        />
+      {/* Grid de Acceso a Módulos Principales */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Libreta de Notas */}
+        <Link
+          href="/padre/notas"
+          className="p-5 rounded-2xl bg-white border border-outline-variant/30 hover:border-primary/40 shadow-soft hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <GraduationCap className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">
+              RF-030
+            </span>
+          </div>
+          <h2 className="text-sm font-bold text-primary group-hover:text-secondary transition-colors">
+            Libreta de Calificaciones
+          </h2>
+          <p className="text-xs text-on-surface-variant mt-1">
+            {tieneMora ? '🔒 Bloqueado por mora' : 'Consolidado diario y bimestral'}
+          </p>
+          <div className="mt-4 flex items-center text-xs font-semibold text-primary gap-1">
+            <span>Ver notas</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
 
-        <StatsCard
-          title="Estado de Pagos"
-          value={proximoPago ? formatCurrency(proximoPago.monto) : 'Al Día'}
-          subtitle={proximoPago ? `Vence el ${formatDate(proximoPago.fecha_vencimiento)}` : 'Sin deudas pendientes'}
-          variant={proximoPago?.estado === 'vencido' ? 'warning' : 'info'}
-          icon={<CreditCard className="w-6 h-6" />}
-        />
+        {/* Asistencia Escolar */}
+        <Link
+          href="/padre/asistencia"
+          className="p-5 rounded-2xl bg-white border border-outline-variant/30 hover:border-primary/40 shadow-soft hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <CalendarCheck2 className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">
+              RF-031
+            </span>
+          </div>
+          <h2 className="text-sm font-bold text-primary group-hover:text-secondary transition-colors">
+            Control de Asistencia
+          </h2>
+          <p className="text-xs text-on-surface-variant mt-1">
+            Marcación diaria por el auxiliar
+          </p>
+          <div className="mt-4 flex items-center text-xs font-semibold text-primary gap-1">
+            <span>Ver registro</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
 
-        <StatsCard
-          title="Comunicados Nuevos"
-          value="2 Avisos"
-          subtitle="Circulares oficiales vigentes"
-          variant="secondary"
-          icon={<Bell className="w-6 h-6" />}
-        />
+        {/* Pagos & Yape QR */}
+        <Link
+          href="/padre/pagos"
+          className="p-5 rounded-2xl bg-white border border-outline-variant/30 hover:border-primary/40 shadow-soft hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">
+              RF-035 / RF-050
+            </span>
+          </div>
+          <h2 className="text-sm font-bold text-primary group-hover:text-secondary transition-colors">
+            Pagos & Yape QR
+          </h2>
+          <p className="text-xs text-on-surface-variant mt-1">
+            Subida de voucher y validación
+          </p>
+          <div className="mt-4 flex items-center text-xs font-semibold text-primary gap-1">
+            <span>Gestionar pagos</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+
+        {/* Conducta y Méritos */}
+        <Link
+          href="/padre/conducta"
+          className="p-5 rounded-2xl bg-white border border-outline-variant/30 hover:border-primary/40 shadow-soft hover:shadow-md transition-all group"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <ClipboardList className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-on-surface-variant">
+              RF-038
+            </span>
+          </div>
+          <h2 className="text-sm font-bold text-primary group-hover:text-secondary transition-colors">
+            Conducta y Méritos
+          </h2>
+          <p className="text-xs text-on-surface-variant mt-1">
+            {childConductas.length} registro(s) por el auxiliar
+          </p>
+          <div className="mt-4 flex items-center text-xs font-semibold text-primary gap-1">
+            <span>Ver reporte</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
       </div>
 
-      {/* Two Column Layout: Recent Grades & Upcoming Payments */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Recent Evaluations */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Últimas Calificaciones MINEDU</CardTitle>
-                <p className="text-xs text-on-surface-variant mt-0.5">
-                  Evaluación por competencias correspondiente al Bimestre 1
-                </p>
-              </div>
-              <Link href="/padre/notas">
-                <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                  Ver Libreta Completa
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-surface-container">
-                {notas.length === 0 ? (
-                  <p className="p-6 text-center text-xs text-on-surface-variant">No hay calificaciones registradas para este estudiante.</p>
-                ) : (
-                  notas.map((nota) => (
-                    <div key={nota.id} className="p-4 sm:p-5 flex items-center justify-between hover:bg-surface-container/30 transition-colors">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="w-4 h-4 text-primary" />
-                          <span className="text-xs font-semibold uppercase text-on-surface-variant">
-                            {nota.seccion_curso_id.includes('mat') ? 'Matemática' : 'Comunicación Integral'}
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-bold text-primary">{nota.competencia}</h4>
-                        {nota.conclusiones_descriptivas && (
-                          <p className="text-xs text-on-surface-variant italic">
-                            "{nota.conclusiones_descriptivas}"
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant={`grade-${nota.calificacion}` as any} size="md">
-                        {nota.calificacion}
-                      </Badge>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Sección Inferior: Temario del Día & Tareas Pendientes */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Temario del Día (RF-010, RF-082) */}
+        <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-soft space-y-4">
+          <div className="flex items-center justify-between border-b border-surface-container pb-3">
+            <div className="flex items-center gap-2">
+              <BookOpenCheck className="w-5 h-5 text-primary" />
+              <h2 className="text-sm font-bold text-primary">Temario Dictado Hoy en Clase (RF-010)</h2>
+            </div>
+            <Link href="/padre/temario" className="text-xs text-secondary font-bold hover:underline">
+              Ver todos
+            </Link>
+          </div>
 
-          {/* Institutional Circulars */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Comunicados y Avisos Recientes</CardTitle>
-                <p className="text-xs text-on-surface-variant mt-0.5">
-                  Información enviada por Dirección y Secretaría
-                </p>
+          <div className="space-y-3">
+            {temarios.slice(0, 2).map((tem) => (
+              <div key={tem.id} className="p-3.5 rounded-xl bg-surface-container/50 border border-outline-variant/20 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-primary">{tem.curso_nombre}</span>
+                  <span className="text-on-surface-variant text-[11px]">{tem.fecha}</span>
+                </div>
+                <p className="text-xs font-semibold text-on-surface">{tem.tema_titulo}</p>
+                <p className="text-xs text-on-surface-variant line-clamp-2">{tem.descripcion}</p>
+                <p className="text-[10px] text-secondary font-medium">Dictado por: {tem.docente_nombre}</p>
               </div>
-              <Link href="/padre/comunicados">
-                <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-3.5 h-3.5" />}>
-                  Ver Todos
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-surface-container">
-                {comunicados.map((com) => (
-                  <div key={com.id} className="p-4 sm:p-5 space-y-2 hover:bg-surface-container/30 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <Badge variant={com.categoria === 'Circular' ? 'primary' : com.categoria === 'Evento' ? 'secondary' : 'warning'}>
-                        {com.categoria}
-                      </Badge>
-                      <span className="text-xs text-on-surface-variant">{formatDate(com.created_at)}</span>
-                    </div>
-                    <h4 className="text-sm font-bold text-primary">{com.titulo}</h4>
-                    <p className="text-xs text-on-surface-variant line-clamp-2">{com.contenido}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
         </div>
 
-        {/* Right 1 Col: Pension Status & Student Card */}
-        <div className="space-y-6">
-          {/* Active Student Info Card */}
-          <Card className="border-t-4 border-t-primary">
-            <CardHeader>
-              <CardTitle className="text-base">Ficha del Estudiante</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg border border-primary/20">
-                  {currentChild?.nombres.charAt(0)}
+        {/* Tareas y Cronograma de Entregas (RF-011, RF-037) */}
+        <div className="bg-white p-6 rounded-2xl border border-outline-variant/30 shadow-soft space-y-4">
+          <div className="flex items-center justify-between border-b border-surface-container pb-3">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 text-primary" />
+              <h2 className="text-sm font-bold text-primary">Tareas & Avisos de la Semana (RF-037)</h2>
+            </div>
+            <Link href="/padre/tareas" className="text-xs text-secondary font-bold hover:underline">
+              Ver todas
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {tareas.slice(0, 2).map((tar) => (
+              <div key={tar.id} className="p-3.5 rounded-xl bg-surface-container/50 border border-outline-variant/20 space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-primary">{tar.curso_nombre}</span>
+                  <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    Límite: {tar.fecha_limite}
+                  </span>
                 </div>
-                <div>
-                  <h4 className="text-sm font-bold text-primary">{currentChild?.nombres} {currentChild?.apellidos}</h4>
-                  <p className="text-xs text-on-surface-variant">DNI: {currentChild?.dni}</p>
-                </div>
+                <p className="text-xs font-semibold text-on-surface">{tar.titulo}</p>
+                <p className="text-xs text-on-surface-variant line-clamp-2">{tar.descripcion}</p>
               </div>
-
-              <div className="space-y-2 pt-2 border-t border-surface-container text-xs">
-                <div className="flex justify-between py-1 border-b border-surface-container/60">
-                  <span className="text-on-surface-variant">Código Modular:</span>
-                  <span className="font-semibold text-primary">{currentChild?.codigo_estudiante}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-surface-container/60">
-                  <span className="text-on-surface-variant">Aula / Grado:</span>
-                  <span className="font-semibold text-primary">{currentChild?.seccion_nombre}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-surface-container/60">
-                  <span className="text-on-surface-variant">Tutor de Aula:</span>
-                  <span className="font-semibold text-primary">Prof. Carlos García</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-on-surface-variant">Estado Matrícula:</span>
-                  <Badge variant="success" size="sm">Matriculado 2026</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Card Shortcut */}
-          <Card className="bg-gradient-to-br from-amber-500/10 to-transparent border-amber-200">
-            <CardContent className="space-y-4 pt-6">
-              <div className="flex items-center gap-2 text-secondary">
-                <CreditCard className="w-5 h-5" />
-                <h4 className="text-sm font-bold">Próximo Vencimiento</h4>
-              </div>
-
-              {proximoPago ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-on-surface-variant">{proximoPago.concepto}</p>
-                  <p className="text-2xl font-black text-primary">{formatCurrency(proximoPago.monto)}</p>
-                  <div className="flex items-center justify-between text-xs text-on-surface-variant">
-                    <span>Vence:</span>
-                    <span className="font-bold text-error">{formatDate(proximoPago.fecha_vencimiento)}</span>
-                  </div>
-
-                  <Link href="/padre/pagos" className="block pt-2">
-                    <Button variant="primary" size="sm" className="w-full">
-                      Pagar con Culqi / Tarjeta
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="py-4 text-center space-y-2">
-                  <ShieldCheck className="w-8 h-8 text-success mx-auto" />
-                  <p className="text-xs font-bold text-success">¡Felicitaciones! Se encuentra al día en todas sus mensualidades.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            ))}
+          </div>
         </div>
       </div>
     </div>

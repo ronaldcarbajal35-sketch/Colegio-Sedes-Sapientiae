@@ -10,31 +10,25 @@ export default function PadreLayout({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [selectedChildId, setSelectedChildId] = useState<string>('alu-1')
+  const [selectedChildId, setSelectedChildId] = useState('alu-1')
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col">
+    <div className="min-h-screen bg-surface flex">
       <Sidebar
         role="padre"
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="lg:pl-64 flex flex-col flex-1">
+      <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
         <Navbar
           onOpenSidebar={() => setSidebarOpen(true)}
           selectedChildId={selectedChildId}
-          onSelectChild={(id) => {
-            setSelectedChildId(id)
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('sedes_selected_child', id)
-              window.dispatchEvent(new Event('child_changed'))
-            }
-          }}
+          onSelectChild={(id) => setSelectedChildId(id)}
           isPadre={true}
         />
 
-        <main className="p-4 sm:p-6 lg:p-8 flex-1 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-300">
           {children}
         </main>
       </div>
