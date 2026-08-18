@@ -1,6 +1,8 @@
 'use client'
 
 import React from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { Menu, Bell } from 'lucide-react'
 import { SyncBadge } from './sync-badge'
 import { RoleSwitcherBanner, DEMO_PROFILES } from './role-switcher-banner'
@@ -26,22 +28,41 @@ export function Navbar({ onOpenSidebar, selectedChildId, onSelectChild, isPadre 
   }, [isPadre])
 
   return (
-    <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-outline-variant/30 px-4 sm:px-6 py-3 transition-all">
+    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-outline-variant/30 px-4 sm:px-6 py-2.5 transition-all">
       <div className="flex items-center justify-between gap-4">
-        {/* Left side: Hamburger & Child Selector */}
+        {/* Left side: Hamburger, Logo & Child Selector */}
         <div className="flex items-center gap-3">
           <button
             onClick={onOpenSidebar}
-            className="p-2 rounded-lg text-primary hover:bg-surface-container lg:hidden transition-colors"
+            className="p-2 rounded-xl text-primary hover:bg-surface-container lg:hidden transition-colors"
             aria-label="Abrir menú"
           >
             <Menu className="w-5 h-5" />
           </button>
 
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg overflow-hidden border border-outline-variant/40 shadow-sm shrink-0 bg-white p-0.5 group-hover:scale-105 transition-transform">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/logo-sedes.jpg"
+                alt="Escudo Sedes Sapientiae"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="hidden sm:block">
+              <span className="text-xs font-black text-primary tracking-tight uppercase leading-none block">
+                Sedes Sapientiae
+              </span>
+              <span className="text-[10px] text-on-surface-variant font-medium">
+                Colegio Diocesano
+              </span>
+            </div>
+          </Link>
+
           {isPadre && children.length > 0 && (
-            <div className="flex items-center gap-2 bg-surface-container/70 px-3 py-1.5 rounded-xl border border-outline-variant/30">
+            <div className="flex items-center gap-2 bg-surface-container/70 px-3 py-1.5 rounded-xl border border-outline-variant/30 ml-2">
               <span className="text-xs font-medium text-on-surface-variant hidden md:inline">
-                Estudiante activo:
+                Estudiante:
               </span>
               <select
                 value={selectedChildId || children[0]?.id}
@@ -64,7 +85,7 @@ export function Navbar({ onOpenSidebar, selectedChildId, onSelectChild, isPadre 
           <RoleSwitcherBanner />
 
           <button
-            className="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors relative"
+            className="p-2 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors relative"
             title="Notificaciones"
           >
             <Bell className="w-4 h-4 text-primary" />

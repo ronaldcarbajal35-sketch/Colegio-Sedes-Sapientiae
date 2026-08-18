@@ -60,59 +60,56 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   ]
 
   const docenteLinks = [
-    { href: '/docente/secciones', label: 'Mis Cursos y Aulas', icon: Layers },
     { href: '/docente/temario', label: 'Temario del Día', icon: CalendarCheck2 },
-    { href: '/docente/tareas', label: 'Tareas y Avisos', icon: CheckSquare },
-    { href: '/docente/notas', label: 'Registro de Notas', icon: BookOpenCheck },
-    { href: '/docente/asistencia', label: 'Toma de Asistencia', icon: CalendarCheck2 },
-    { href: '/repositorio', label: 'Repositorio de Libros', icon: BookOpen },
+    { href: '/docente/tareas', label: 'Tareas & Avisos', icon: CheckSquare },
+    { href: '/docente/notas', label: 'Registro de Notas', icon: GraduationCap },
+    { href: '/docente/secciones', label: 'Mis 24 Aulas / Secciones', icon: BookOpenCheck },
+    { href: '/docente/asistencia', label: 'Asistencia Diaria', icon: Clock },
+    { href: '/repositorio', label: 'Biblioteca Digital', icon: BookOpen },
   ]
 
   const auxiliarLinks = [
     { href: '/auxiliar/asistencia', label: 'Asistencia 24 Aulas', icon: CalendarCheck2 },
-    { href: '/auxiliar/conducta', label: 'Conducta e Incidencias', icon: ClipboardList },
-    { href: '/auxiliar/reportes', label: 'Reportes de Asistencia', icon: FileSpreadsheet },
+    { href: '/auxiliar/conducta', label: 'Méritos & Deméritos', icon: ClipboardList },
+    { href: '/auxiliar/reportes', label: 'Reporte de Conducta', icon: FileSpreadsheet },
   ]
 
   const psicologoLinks = [
-    { href: '/psicologia/atenciones', label: 'Fichas de Entrevistas', icon: HeartHandshake },
+    { href: '/psicologia/atenciones', label: 'Fichas Confidenciales', icon: HeartHandshake },
     { href: '/psicologia/seguimiento', label: 'Seguimiento Integral', icon: Users2 },
-    { href: '/psicologia/derivaciones', label: 'Derivaciones y Pautas', icon: FileText },
+    { href: '/psicologia/derivaciones', label: 'Pautas & Derivaciones', icon: FileText },
   ]
 
   const padreLinks = [
-    { href: '/padre/dashboard', label: 'Panel del Apoderado', icon: LayoutDashboard },
-    { href: '/padre/notas', label: 'Libreta de Notas', icon: GraduationCap },
-    { href: '/padre/pagos', label: 'Pagos & Yape QR', icon: CreditCard },
-    { href: '/padre/asistencia', label: 'Control de Asistencia', icon: CalendarCheck2 },
-    { href: '/padre/conducta', label: 'Reporte de Conducta', icon: ClipboardList },
-    { href: '/padre/tareas', label: 'Tareas y Avisos', icon: CheckSquare },
-    { href: '/padre/temario', label: 'Temario Dictado en Clase', icon: BookOpenCheck },
-    { href: '/padre/fut', label: 'Nuevo Trámite FUT', icon: FileText },
-    { href: '/repositorio', label: 'Libros y Material', icon: BookOpen },
+    { href: '/padre/dashboard', label: 'Resumen General', icon: LayoutDashboard },
+    { href: '/padre/notas', label: 'Notas (Bloqueo x Mora)', icon: GraduationCap },
+    { href: '/padre/pagos', label: 'Cronograma & Yape QR', icon: QrCode },
+    { href: '/padre/temario', label: 'Temario del Día', icon: CalendarCheck2 },
+    { href: '/padre/tareas', label: 'Tareas Escolares', icon: CheckSquare },
+    { href: '/padre/conducta', label: 'Reporte Disciplinario', icon: ClipboardList },
+    { href: '/padre/fut', label: 'Mesa de Partes FUT', icon: FileText },
+    { href: '/padre/comunicados', label: 'Circulares & Avisos', icon: Bell },
   ]
 
   const alumnoLinks = [
-    { href: '/alumno/dashboard', label: 'Mi Portal Escolar', icon: LayoutDashboard },
-    { href: '/alumno/tareas', label: 'Mis Tareas Pendientes', icon: CheckSquare },
-    { href: '/alumno/temario', label: 'Temario del Día', icon: CalendarCheck2 },
-    { href: '/repositorio', label: 'Biblioteca Digital', icon: BookOpen },
+    { href: '/alumno/dashboard', label: 'Mi Panel Escolar', icon: LayoutDashboard },
+    { href: '/alumno/tareas', label: 'Mis Tareas Asignadas', icon: CheckSquare },
+    { href: '/alumno/temario', label: 'Temario de Hoy', icon: CalendarCheck2 },
     { href: '/alumno/notas', label: 'Mis Calificaciones', icon: GraduationCap },
+    { href: '/repositorio', label: 'Libros Escolares', icon: BookOpen },
   ]
 
-  const roleMap: Record<string, { title: string; links: typeof padreLinks }> = {
-    director: { title: 'Portal de Dirección', links: directorLinks },
-    administrativo: { title: 'Gestión Administrativa', links: adminLinks },
-    secretaria: { title: 'Gestión Administrativa', links: adminLinks },
-    admin: { title: 'Gestión Administrativa', links: adminLinks },
+  const roleConfig: Record<string, { title: string; links: typeof adminLinks }> = {
+    director: { title: 'Dirección General', links: directorLinks },
+    administrativo: { title: 'Secretaría / Admin', links: adminLinks },
     docente: { title: 'Portal Docente', links: docenteLinks },
     auxiliar: { title: 'Portal Auxiliar', links: auxiliarLinks },
     psicologo: { title: 'Dpto. Psicología', links: psicologoLinks },
-    padre: { title: 'Portal de Apoderados', links: padreLinks },
-    alumno: { title: 'Portal del Estudiante', links: alumnoLinks },
+    padre: { title: 'Portal Apoderados', links: padreLinks },
+    alumno: { title: 'Portal Estudiante', links: alumnoLinks },
   }
 
-  const currentConfig = roleMap[role] || roleMap.padre
+  const currentConfig = roleConfig[role] || roleConfig.docente
   const links = currentConfig.links
 
   const handleLogout = () => {
@@ -134,22 +131,27 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
 
       <aside
         className={cn(
-          'fixed top-0 bottom-0 left-0 z-40 w-64 bg-primary text-white flex flex-col justify-between transition-transform duration-300 ease-in-out border-r border-primary-container lg:translate-x-0',
+          'fixed top-0 bottom-0 left-0 z-40 w-64 bg-primary text-white flex flex-col justify-between transition-transform duration-300 ease-in-out border-r border-primary-container lg:translate-x-0 shadow-xl',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {/* Brand Header */}
+        {/* Brand Header with Real Official Shield Logo */}
         <div>
-          <div className="p-4 border-b border-primary-container flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-white shadow-md shrink-0">
-              <School className="w-6 h-6" />
+          <div className="p-4 border-b border-primary-container/80 flex items-center gap-3 bg-[#0a162e]">
+            <div className="w-11 h-11 rounded-xl overflow-hidden border border-white/20 shadow-md shrink-0 bg-white p-0.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/images/logo-sedes.jpg"
+                alt="Escudo Sedes Sapientiae"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div className="overflow-hidden">
-              <h1 className="text-sm font-bold tracking-tight text-white uppercase leading-tight truncate">
-                Sede Sapiens
+              <h1 className="text-xs font-black tracking-tight text-white uppercase leading-tight truncate">
+                Sedes Sapientiae
               </h1>
-              <p className="text-[11px] text-secondary-container font-medium tracking-wide">
-                Intranet 2026
+              <p className="text-[10px] text-secondary-container font-medium tracking-wide">
+                Colegio Diocesano
               </p>
             </div>
           </div>
@@ -158,7 +160,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
           <nav className="p-3 space-y-1 max-h-[calc(100vh-170px)] overflow-y-auto">
             <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-outline flex items-center justify-between">
               <span>{currentConfig.title}</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary-container text-secondary-container capitalize">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary-container text-secondary-container capitalize font-bold">
                 {role}
               </span>
             </div>
@@ -172,13 +174,13 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
                   href={link.href}
                   onClick={onClose}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-smooth group',
+                    'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all group',
                     isActive
-                      ? 'bg-secondary text-white shadow font-semibold'
+                      ? 'bg-secondary text-white shadow-sm font-bold'
                       : 'text-surface-container/80 hover:bg-primary-container hover:text-white'
                   )}
                 >
-                  <Icon className={cn('w-4 h-4 shrink-0 transition-transform group-hover:scale-110', isActive ? 'text-white' : 'text-outline')} />
+                  <Icon className={cn('w-4 h-4 transition-transform group-hover:scale-110', isActive ? 'text-white' : 'text-surface-container/60')} />
                   <span className="truncate">{link.label}</span>
                 </Link>
               )
@@ -186,15 +188,11 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
           </nav>
         </div>
 
-        {/* Footer actions */}
-        <div className="p-3 border-t border-primary-container bg-primary-container/40">
-          <div className="flex items-center justify-between text-xs text-outline mb-2 px-1">
-            <span>24 Aulas Activas</span>
-            <span className="font-bold text-secondary-container">2026</span>
-          </div>
+        {/* Footer / Logout */}
+        <div className="p-4 border-t border-primary-container/80 bg-[#0a162e]">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-primary-container/80 hover:bg-error text-surface-container hover:text-white text-xs font-semibold transition-all"
+            className="flex items-center gap-3 w-full px-3.5 py-2 rounded-xl text-xs font-semibold text-error/90 hover:bg-error/10 hover:text-error transition-all"
           >
             <LogOut className="w-4 h-4" />
             <span>Cerrar Sesión</span>
